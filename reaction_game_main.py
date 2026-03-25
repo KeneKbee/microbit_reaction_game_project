@@ -1,5 +1,6 @@
 from microbit import *
-from random import randint
+import music
+from random import randint, seed
 
 # ---------------------------------------------------------------------------------------------------------------------------
 
@@ -33,6 +34,8 @@ class Game:
         self.__player1.letter = self.__letters[self.__choose_letter(self.__player1.getPin())]
         self.__player2.letter = self.__letters[self.__choose_letter(self.__player2.getPin())]
 
+        seed(running_time())
+
         display.show(Image.NO)
         sleep(1000)
         while(not self.__running):
@@ -45,11 +48,13 @@ class Game:
     def __play(self) -> None:
         rounds = 0
         while(self.__running):
+            display.show(rounds+1)
+            sleep(1000)
+            display.clear()
+            sleep(500)
             self.__countdown(3)
             cheated = self.__await()
-            if(cheated):
-                continue
-            else:
+            if(not cheated):
                 self.__show()
 
             rounds+=1
@@ -59,28 +64,29 @@ class Game:
         self.__end_game()
 
     def __await(self) -> bool:
-        for i in range(randint(500, 3000)):
+        wait_time = randint(300, 3000)
+        for i in range(wait_time):
             sleep(1)
             if(self.__player1.getPin().is_touched()):
-                self.__player_win(2, -1)
+                self.__player_win(self.__player2, -1)
                 return True
             elif(self.__player2.getPin().is_touched()):
-                self.__player_win(1, -1)
+                self.__player_win(self.__player1, -1)
                 return True
         return False
     
     def __show(self) -> None:
-        milliseconds = 0
+        start_time = running_time()
+        # TODO: sfx for showing
         display.show('!')
         while True:
             if(self.__player1.getPin().is_touched()):
-                self.__player_win(1, milliseconds)
+                self.__player_win(self.__player1, running_time() - start_time)
                 break
             elif(self.__player2.getPin().is_touched()):
-                self.__player_win(2, milliseconds)
+                self.__player_win(self.__player2, running_time() - start_time)
                 break
-
-            milliseconds+=1
+            sleep(1)
 
     def __end_game(self) -> None:
         pass
@@ -90,6 +96,7 @@ class Game:
             if(i%2==0):
                 display.clear()
             else:
+                # TODO: sfx for blinking
                 display.show(char)
             sleep(blink_time//repeats)
         display.clear()
@@ -98,8 +105,10 @@ class Game:
         index = 0
         while(not playerPin.is_touched()):
             if(button_a.was_pressed()):
+                # TODO: sfx for clicking
                 index-=1
             elif(button_b.was_pressed()):
+                # TODO: sfx for clicking
                 index+=1
 
             if(index <= -1):
@@ -107,37 +116,29 @@ class Game:
             elif(index >= len(self.__letters)):
                 index=0
             display.show(self.__letters[index])
+
+        # TODO: sfx for choosing
         self.__blink(self.__letters[index], 10, 750)
         return index
 
     def __countdown(self, seconds: int) -> None:
         for i in range(seconds):
+            # TODO: sfx for counting down
             display.show(seconds-i)
             sleep(1000)
         display.clear()
 
 
-    def __player_win(self, player: int, milliseconds: int) -> None:
-        tmp_player = None
+    def __player_win(self, player: Player, milliseconds: int) -> None:
+        player.win()
 
-        if(player == 1):
-            tmp_player = self.__player1
-        elif(player == 2):
-            tmp_player = self.__player2
-        
-        if(tmp_player == None):
-            pass
-
-        tmp_player.win()
-        self.__blink(tmp_player.letter, 10, 750)
+        # TODO: sfx for winning
+        self.__blink(player.letter, 10, 750)
         if(milliseconds > -1):
             display.scroll(str(milliseconds)+"ms")
-        self.__blink(tmp_player.getScore(), 10, 750)
+        self.__blink(player.getScore(), 10, 750)
 
-        if(player == 1):
-            self.__player1 = tmp_player
-        elif(player == 2):
-            self.__player2 = tmp_player
+        sleep(1000)
 
 # ---------------------------------------------------------------------------------------------------------------------------
 
