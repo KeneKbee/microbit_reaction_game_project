@@ -12,14 +12,17 @@ class Player:
         self.__score = 0
         self.__pin = pin
 
-    def getPin(self) -> MicroBitTouchPin:
+    def get_pin(self) -> MicroBitTouchPin:
         return self.__pin
 
     def win(self) -> None:
         self.__score+=1
     
-    def getScore(self) -> int:
+    def get_score(self) -> int:
         return self.__score
+    
+    def reset_score(self) -> None:
+        self.__score = 0
 
 
 class Game:
@@ -31,15 +34,15 @@ class Game:
         self.__rounds = 5
 
     def start(self) -> None:
-        self.__player1.letter = self.__letters[self.__choose_letter(self.__player1.getPin())]
-        self.__player2.letter = self.__letters[self.__choose_letter(self.__player2.getPin())]
+        self.__player1.letter = self.__letters[self.__choose_letter(self.__player1.get_pin())]
+        self.__player2.letter = self.__letters[self.__choose_letter(self.__player2.get_pin())]
 
         seed(running_time())
 
         display.show(Image.NO)
         sleep(1000)
         while(not self.__running):
-            if(self.__player1.getPin().is_touched() and self.__player2.getPin().is_touched()):
+            if(self.__player1.get_pin().is_touched() and self.__player2.get_pin().is_touched()):
                 self.__running = True
 
         self.__blink(Image.YES, 20, 1500)
@@ -67,10 +70,10 @@ class Game:
         wait_time = randint(300, 3000)
         for i in range(wait_time):
             sleep(1)
-            if(self.__player1.getPin().is_touched()):
+            if(self.__player1.get_pin().is_touched()):
                 self.__player_win(self.__player2, -1)
                 return True
-            elif(self.__player2.getPin().is_touched()):
+            elif(self.__player2.get_pin().is_touched()):
                 self.__player_win(self.__player1, -1)
                 return True
         return False
@@ -80,16 +83,41 @@ class Game:
         # TODO: sfx for showing
         display.show('!')
         while True:
-            if(self.__player1.getPin().is_touched()):
+            if(self.__player1.get_pin().is_touched()):
                 self.__player_win(self.__player1, running_time() - start_time)
                 break
-            elif(self.__player2.getPin().is_touched()):
+            elif(self.__player2.get_pin().is_touched()):
                 self.__player_win(self.__player2, running_time() - start_time)
                 break
             sleep(1)
 
     def __end_game(self) -> None:
-        pass
+        winner = None
+        loser = None
+
+        if(self.__player1.get_score() > self.__player2.get_score()):
+            winner = self.__player1
+            loser = self.__player2
+        else:
+            winner = self.__player2
+            loser = self.__player1
+        
+        display.scroll(winner.letter + " wins!")
+        self.__blink(winner.get_score(), 20, 1500)
+        display.scroll(loser.letter + "loses")
+        self.__blink(loser.get_score(), 20, 1500)
+
+        for count in range(7000):
+            if(self.__player1.get_pin().is_touched() and self.__player2.get_pin().is_touched()):
+                self.__reset()
+                break
+            sleep(1)
+
+    def __reset(self) -> None:
+        seed(running_time())
+        self.__player1.reset_score()
+        self.__player2.reset_score()
+        self.__play()
 
     def __blink(self, char, repeats: int, blink_time: int) -> None:
         for i in range(repeats):
@@ -136,7 +164,7 @@ class Game:
         self.__blink(player.letter, 10, 750)
         if(milliseconds > -1):
             display.scroll(str(milliseconds)+"ms")
-        self.__blink(player.getScore(), 10, 750)
+        self.__blink(player.get_score(), 10, 750)
 
         sleep(1000)
 
